@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,12 +21,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
-import com.example.weatherapp.model.CityWeatherDetails
+import com.example.weatherapp.model.CityForecastDetails
+import com.example.weatherapp.model.DailyForecast
 import com.example.weatherapp.viewmodel.UiState
 import com.example.weatherapp.viewmodel.WeatherViewModel
 
@@ -58,88 +60,84 @@ fun CityDetailsScreen(cityId: String) {
                 )
             }
             is UiState.Success -> {
-                CityDetails(city = (state as UiState.Success<CityWeatherDetails>).data)
+                val cityData = (state as UiState.Success<CityForecastDetails>).data
+                CityForecastView(city = cityData)
             }
         }
     }
 }
 
 @Composable
-private fun CityDetails(city: CityWeatherDetails) {
-    val weather = city.weather.firstOrNull()
-
+private fun CityForecastView(city: CityForecastDetails) {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
     ) {
         Text(
             text = city.name,
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "5-Day Forecast",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-        weather?.let {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        model = "https://openweathermap.org/img/wn/${it.icon}@2x.png"
-                    ),
-                    contentDescription = it.description,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.size(80.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = it.description.replaceFirstChar { char -> char.uppercase() },
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "${city.main.temp}°C",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                WeatherDetailRow(
-                    label = "Humidity",
-                    value = "${city.main.humidity}%"
-                )
-                WeatherDetailRow(
-                    label = "Wind Speed",
-                    value = "${city.wind.speed} m/s"
-                )
-            }
+        city.forecasts.forEach { forecast ->
+            ForecastDayItem(forecast = forecast)
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
 @Composable
-private fun WeatherDetailRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+private fun ForecastDayItem(forecast: DailyForecast) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = forecast.date,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                            Image(
+                            painter = rememberAsyncImagePainter(
+                                model = "https://openweathermap.org/img/wn/${forecast.icon}@2x.png"
+                            ),
+                    contentDescription = forecast.description,
+                    modifier = Modifier.size(48.dp))
+
+                Text(
+                    text = "${forecast.temp}°C",
+                    style = MaterialTheme.typography.titleMedium)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                WeatherInfoItem(
+                    label = "Humidity",
+                    value = "${forecast.humidity}%"
+                )
+                WeatherInfoItem(
+                    label = "Wind",
+                    value = "${forecast.windSpeed} m/s"
+                )
+            }
+        }
     }
 }

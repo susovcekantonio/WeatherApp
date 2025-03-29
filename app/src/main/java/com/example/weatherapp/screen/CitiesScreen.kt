@@ -150,7 +150,7 @@ private fun CityItem(city: CityWeather, navController: NavController) {
 }
 
 @Composable
-private fun WeatherInfoItem(label: String, value: String) {
+fun WeatherInfoItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,

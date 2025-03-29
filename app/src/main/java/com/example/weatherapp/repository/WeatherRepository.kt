@@ -1,9 +1,12 @@
 package com.example.weatherapp.repository
 
 import com.example.weatherapp.api.WeatherApi
-import com.example.weatherapp.model.CitiesWeatherResponse
+import com.example.weatherapp.model.CityForecastDetails
 import com.example.weatherapp.model.CityWeather
-import com.example.weatherapp.model.CityWeatherDetails
+import com.example.weatherapp.model.DailyForecast
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 class WeatherRepository @Inject constructor(
@@ -17,12 +20,36 @@ class WeatherRepository @Inject constructor(
         }
     }
 
-    suspend fun getCityWeather(cityId: String): CityWeatherDetails {
-        return try {
-            weatherApi.getCityWeather(cityId)
-        } catch (e: Exception) {
-            throw WeatherDataException("Failed to fetch city details: ${e.message}")
-        }
+
+    suspend fun getCityForecast(cityId: String): CityForecastDetails {
+        val response = weatherApi.getCityForecast(cityId)
+
+
+        val dailyForecasts = response.list
+            .groupBy { entry ->
+                SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                    .format(Date(entry.dt * 1000))
+            }
+            .values
+            .take(5)
+            .map { dailyEntries ->
+                val firstEntry = dailyEntries.first()
+                DailyForecast(
+                    date = SimpleDateFormat("EEE", Locale.US)
+                        .format(Date(firstEntry.dt * 1000)),
+                    temp = firstEntry.main.temp,
+                    icon = firstEntry.weather.first().icon,
+                    description = firstEntry.weather.first().description,
+                    humidity = firstEntry.main.humidity,
+                    windSpeed = firstEntry.wind.speed
+                )
+            }
+
+        return CityForecastDetails(
+            id = response.city.id,
+            name = response.city.name,
+            forecasts = dailyForecasts
+        )
     }
 }
 

@@ -1,12 +1,9 @@
 package com.example.weatherapp.viewmodel
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.weatherapp.model.CitiesWeatherResponse
+import com.example.weatherapp.model.CityForecastDetails
 import com.example.weatherapp.model.CityWeather
-import com.example.weatherapp.model.CityWeatherDetails
 import com.example.weatherapp.repository.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,12 +15,12 @@ import javax.inject.Inject
 class WeatherViewModel @Inject constructor(
     private val repository: WeatherRepository
 ) : ViewModel() {
-    // Using StateFlow instead of mutableStateOf
+
     private val _citiesState = MutableStateFlow<UiState<List<CityWeather>>>(UiState.Loading)
     val citiesState: StateFlow<UiState<List<CityWeather>>> = _citiesState
 
-    private val _cityDetailsState = MutableStateFlow<UiState<CityWeatherDetails>>(UiState.Loading)
-    val cityDetailsState: StateFlow<UiState<CityWeatherDetails>> = _cityDetailsState
+    private val _cityDetailsState = MutableStateFlow<UiState<CityForecastDetails>>(UiState.Loading)
+    val cityDetailsState: StateFlow<UiState<CityForecastDetails>> = _cityDetailsState
 
     init {
         loadCities(listOf("2643743", "2968815", "5368361"))
@@ -45,7 +42,7 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             _cityDetailsState.value = UiState.Loading
             try {
-                val details = repository.getCityWeather(cityId)
+                val details = repository.getCityForecast(cityId)
                 _cityDetailsState.value = UiState.Success(details)
             } catch (e: Exception) {
                 _cityDetailsState.value = UiState.Error(e.message ?: "Unknown error")
