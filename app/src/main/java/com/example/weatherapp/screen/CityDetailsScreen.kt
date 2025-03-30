@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,9 @@ import com.example.weatherapp.model.CityForecastDetails
 import com.example.weatherapp.model.DailyForecast
 import com.example.weatherapp.viewmodel.UiState
 import com.example.weatherapp.viewmodel.WeatherViewModel
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.scale
 
 @Composable
 fun CityDetailsScreen(cityId: String) {
@@ -41,7 +45,7 @@ fun CityDetailsScreen(cityId: String) {
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(16.dp)
     ) {
         when (state) {
@@ -95,6 +99,16 @@ private fun CityForecastView(city: CityForecastDetails) {
 
 @Composable
 private fun ForecastDayItem(forecast: DailyForecast) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -111,12 +125,14 @@ private fun ForecastDayItem(forecast: DailyForecast) {
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                            Image(
-                            painter = rememberAsyncImagePainter(
-                                model = "https://openweathermap.org/img/wn/${forecast.icon}@2x.png"
-                            ),
-                    contentDescription = forecast.description,
-                    modifier = Modifier.size(48.dp))
+                Box(modifier = Modifier.scale(pulseScale)) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            model = "https://openweathermap.org/img/wn/${forecast.icon}@2x.png"
+                        ),
+                        contentDescription = forecast.description,
+                        modifier = Modifier.size(48.dp))
+                }
 
                 Text(
                     text = "${forecast.temp}°C",

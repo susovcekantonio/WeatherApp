@@ -22,18 +22,21 @@ class WeatherViewModel @Inject constructor(
     private val _cityDetailsState = MutableStateFlow<UiState<CityForecastDetails>>(UiState.Loading)
     val cityDetailsState: StateFlow<UiState<CityForecastDetails>> = _cityDetailsState
 
-    init {
-        loadCities(listOf("2643743", "2968815", "5368361"))
-    }
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
 
-    private fun loadCities(cityIds: List<String>) {
+    fun searchCities(query: String) {
         viewModelScope.launch {
             _citiesState.value = UiState.Loading
             try {
-                val cities = repository.getCitiesWeather(cityIds)
-                _citiesState.value = UiState.Success(cities)
+                val cities = repository.searchCities(query)
+                _citiesState.value = if (cities.isNotEmpty()) {
+                    UiState.Success(cities)
+                } else {
+                    UiState.Error("No matching cities found")
+                }
             } catch (e: Exception) {
-                _citiesState.value = UiState.Error(e.message ?: "Unknown error")
+                _citiesState.value = UiState.Error(e.message ?: "Search failed")
             }
         }
     }

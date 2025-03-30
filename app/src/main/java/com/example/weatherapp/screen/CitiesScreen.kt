@@ -1,8 +1,14 @@
 package com.example.weatherapp.screen
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,16 +20,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +53,7 @@ import com.example.weatherapp.viewmodel.WeatherViewModel
 fun CitiesScreen(navController: NavController) {
     val viewModel: WeatherViewModel = hiltViewModel()
     val state by viewModel.citiesState.collectAsStateWithLifecycle()
+    var searchText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -44,33 +61,45 @@ fun CitiesScreen(navController: NavController) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Weather Cities",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
+            text = "Search Cities",
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 16.dp)
         )
 
+        OutlinedTextField(
+            value = searchText,
+            onValueChange = {
+                searchText = it
+                if (it.length >= 3) {
+                    viewModel.searchCities(it)
+                }
+            },
+            placeholder = { Text("Enter city name") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = {
+                viewModel.searchCities(searchText)
+            })
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         when (state) {
-            is UiState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(16.dp)
-                )
-            }
-            is UiState.Error -> {
-                Text(
-                    text = "Error: ${(state as UiState.Error).message}",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            }
+            is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            is UiState.Error -> Text(
+                text = "Error: ${(state as UiState.Error).message}",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
             is UiState.Success -> {
                 CityList(cities = (state as UiState.Success<List<CityWeather>>).data, navController = navController)
             }
         }
     }
 }
+
 
 @Composable
 private fun CityList(cities: List<CityWeather>, navController: NavController) {
@@ -88,6 +117,15 @@ private fun CityList(cities: List<CityWeather>, navController: NavController) {
 @Composable
 private fun CityItem(city: CityWeather, navController: NavController) {
     val weather = city.weather.firstOrNull()
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
 
     Card(
         modifier = Modifier
@@ -101,7 +139,13 @@ private fun CityItem(city: CityWeather, navController: NavController) {
         ) {
             Text(
                 text = city.name,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.End
+            )
+
+            Text(
+                text = "Click for more details",
+                style = MaterialTheme.typography.bodySmall
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -110,14 +154,16 @@ private fun CityItem(city: CityWeather, navController: NavController) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            model = "https://openweathermap.org/img/wn/${it.icon}.png"
-                        ),
-                        contentDescription = it.description,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.size(40.dp)
-                    )
+                    Box(modifier = Modifier.scale(pulseScale)) {
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = "https://openweathermap.org/img/wn/${it.icon}.png"
+                            ),
+                            contentDescription = it.description,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = it.description.replaceFirstChar { char -> char.uppercase() },
@@ -148,6 +194,7 @@ private fun CityItem(city: CityWeather, navController: NavController) {
         }
     }
 }
+
 
 @Composable
 fun WeatherInfoItem(label: String, value: String) {

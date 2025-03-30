@@ -47,6 +47,9 @@ android {
 
 dependencies {
 
+    // Animation
+    implementation ("androidx.compose.animation:animation:1.6.0")
+
     // Hilt
     implementation("com.google.dagger:hilt-android:2.48")
     kapt(libs.hilt.compiler)

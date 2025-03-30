@@ -51,6 +51,14 @@ class WeatherRepository @Inject constructor(
             forecasts = dailyForecasts
         )
     }
+
+    suspend fun searchCities(cityName: String): List<CityWeather> {
+        return try {
+            weatherApi.searchCities(cityName).list
+        } catch (e: Exception) {
+            throw WeatherDataException("Error fetching cities: ${e.message}")
+        }
+    }
 }
 
 class WeatherDataException(message: String) : Exception(message)

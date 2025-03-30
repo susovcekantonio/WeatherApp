@@ -19,4 +19,11 @@ interface WeatherApi {
         @Query("units") units: String = "metric",
         @Query("appid") apiKey: String = "5dbb823af5295f6ec3a7f495c8b1e4dd"
     ): ForecastResponse
+
+    @GET("find")
+    suspend fun searchCities(
+        @Query("q") cityName: String,
+        @Query("units") units: String = "metric",
+        @Query("appid") apiKey: String = "5dbb823af5295f6ec3a7f495c8b1e4dd"
+    ): CitiesWeatherResponse
 }
